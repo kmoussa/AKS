@@ -82,9 +82,6 @@ cat <<EOF > parameters.json
 }
 EOF
 
-wget https://raw.githubusercontent.com/Azure/application-gateway-kubernetes-ingress/master/deploy/azuredeploy.json -O template.json
-
-
 # create a resource group
 az group create -n $resourceGroupName -l $location
 
