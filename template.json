@@ -588,7 +588,7 @@
         {
             "type": "Microsoft.ContainerService/managedClusters",
             "name": "[variables('aksClusterName')]",
-            "apiVersion": "2018-03-31",
+            "apiVersion": "2020-02-01",
             "location": "[resourceGroup().location]",
             "properties": {
                 "kubernetesVersion": "[parameters('kubernetesVersion')]",
@@ -603,7 +603,10 @@
                         "osType": "Linux",
                         "storageProfile": "ManagedDisks",
                         "vnetSubnetID": "[variables('kubernetesSubnetId')]",
-                        "dnsPrefix": "agents"
+                        "dnsPrefix": "agents",
+                        "maxPods": 110,
+                        "type": "VirtualMachineScaleSets",
+                        "enableAutoScaling": true
                     }
                 ],
                 "servicePrincipalProfile": {
