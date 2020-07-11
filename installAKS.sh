@@ -60,7 +60,7 @@ brew install jq
 fi
 
 az ad sp create-for-rbac --skip-assignment -o json > auth.json
-sleep 240
+sleep 90
 appId=$(jq -r ".appId" auth.json)
 password=$(jq -r ".password" auth.json)
 objectId=$(az ad sp show --id $appId --query "objectId" -o tsv)
