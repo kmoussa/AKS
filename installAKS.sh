@@ -51,11 +51,13 @@ read aksservicecidr
 echo "What is the AKS DNS IP? i.e 10.2.0.10"
 read aksdnsIP
 
-#linux
-#sudo apt-get install jq -y 
+out=$(uname)
+if [[ $(echo $out | grep -i linux) == 'Linux' ]];then
 
-#mac
-#brew install jq 
+apt-get install jq -y
+else
+brew install jq
+fi
 
 az ad sp create-for-rbac --skip-assignment -o json > auth.json
 sleep 240
