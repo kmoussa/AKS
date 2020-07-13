@@ -606,7 +606,8 @@
                         "dnsPrefix": "agents",
                         "maxPods": 110,
                         "type": "VirtualMachineScaleSets",
-                        "enableAutoScaling": true
+                        "enableAutoScaling": true,
+                        "minCount": 3
                     }
                 ],
                 "servicePrincipalProfile": {
