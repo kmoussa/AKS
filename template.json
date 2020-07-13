@@ -604,7 +604,7 @@
                         "storageProfile": "ManagedDisks",
                         "vnetSubnetID": "[variables('kubernetesSubnetId')]",
                         "dnsPrefix": "agents",
-                        "maxPods": 110,
+                        "maxPods": 30,
                         "type": "VirtualMachineScaleSets",
                         "enableAutoScaling": true,
                         "minCount": 3,
