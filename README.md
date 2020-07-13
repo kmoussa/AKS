@@ -7,3 +7,12 @@ This project is dedicated to making everyone's life easier when it comes to prov
 
 Feel free to contribute and add more files/functionality to this.
 
+<b>How to Install</b>
+
+git clone https://
+
+cd AKS
+
+chmod +x installAKS.sh 
+
+./installAKS.sh 
