@@ -51,18 +51,18 @@ read aksservicecidr
 echo "What is the AKS DNS IP? i.e 10.2.0.10"
 read aksdnsIP
 
-out=$(uname)
+out=$(uname -a)
 if [[ $(echo $out | grep -i azure) == 'azure' ]];then
 
 echo "no need to install jq, this is Azure cloud shell"
-else if [[ $(echo $out | grep -i linux) == 'Linux' ]];then
+elif [[ $(echo $out | grep -i linux) == 'Linux' ]];then
 
 apt-get install jq -y
 else
 
 brew install jq
 fi
-fi
+
 az ad sp create-for-rbac --skip-assignment -o json > auth.json
 sleep 90
 appId=$(jq -r ".appId" auth.json)
