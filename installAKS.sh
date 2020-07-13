@@ -161,12 +161,32 @@ KUBE_AGENT_SUBNET_ID=$(echo $QUERYRESULT | jq '.[0] .vnet[0]')
 FW_ROUTE_NAME="${FW_NAME}_fw_r"
 FW_ROUTE_TABLE_NAME="${FW_NAME}_fw_rt"
 FW_PIP="${FW_NAME}_pip"
-az network public-ip create -g $KUBE_GROUP -n "$FW_PIP" --sku standard
 
-echo "what is your desired private IP for the AZ firewall?"
-read FW_PRIVATE_IP
+#echo "what is your desired private IP for the AZ firewall?"
+#read FW_PRIVATE_IP
 
-az network firewall create -g $resourceGroupName -n $FW_NAME
+az network firewall create \
+    --name $FW_NAME \
+    --resource-group $resourceGroupName
+az network public-ip create \
+    --name $FW_PIP \
+    --resource-group $resourceGroupName \
+    --allocation-method static \
+    --sku standard
+az network firewall ip-config create \
+    --firewall-name $FW_NAME \
+    --name FW-config \
+    --public-ip-address $FW_PIP \
+    --resource-group $resourceGroupName \
+    --vnet-name $KUBE_VNET_NAME
+az network firewall update \
+    --name $FW_NAME \
+    --resource-group $resourceGroupName
+az network public-ip show \
+    --name $FW_PIP \
+    --resource-group $resourceGroupName
+fwprivaddr="$(az network firewall ip-config list -g Test-FW-RG -f Test-FW01 --query "[?name=='FW-config'].privateIpAddress" --output tsv)"
+
 az network route-table create -g $KUBE_GROUP --name $FW_ROUTE_TABLE_NAME
 az network vnet subnet update --resource-group $KUBE_GROUP --route-table $FW_ROUTE_TABLE_NAME --ids $KUBE_AGENT_SUBNET_ID
 az network route-table route create --resource-group $KUBE_GROUP --name $FW_ROUTE_NAME --route-table-name $FW_ROUTE_TABLE_NAME --address-prefix 0.0.0.0/0 --next-hop-type VirtualAppliance --next-hop-ip-address $FW_PRIVATE_IP --subscription $SUBSCRIPTION_ID
