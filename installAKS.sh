@@ -90,7 +90,7 @@ EOF
 az group create -n $resourceGroupName -l $location
 
 # modify the template as needed
-az group deployment create \
+az deployment group create \
         -g $resourceGroupName \
         -n $deploymentName \
         --template-file template.json \
@@ -98,7 +98,7 @@ az group deployment create \
 
 
 
-az group deployment show -g $resourceGroupName -n $deploymentName --query "properties.outputs" -o json > deployment-outputs.json
+az deployment group show -g $resourceGroupName -n $deploymentName --query "properties.outputs" -o json > deployment-outputs.json
 # use the deployment-outputs.json created after deployment to get the cluster name and resource group name
 aksClusterName=$(jq -r ".aksClusterName.value" deployment-outputs.json)
 resourceGroupName=$(jq -r ".resourceGroupName.value" deployment-outputs.json)
