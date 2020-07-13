@@ -160,15 +160,18 @@ KUBE_AGENT_SUBNET_ID=$(echo $QUERYRESULT | jq '.[0] .vnet[0]')
 
 FW_ROUTE_NAME="${FW_NAME}_fw_r"
 FW_ROUTE_TABLE_NAME="${FW_NAME}_fw_rt"
-FW_PUBLIC_IP=$(az network public-ip show -g $KUBE_GROUP -n $FW_IP_NAME --query ipAddress)
+FW_PIP="${FW_NAME}_pip"
+az network public-ip create -g $KUBE_GROUP -n "$FW_PIP" --sku standard
+
 echo "what is your desired private IP for the AZ firewall?"
 read FW_PRIVATE_IP
 
-az network create -g $resourceGroupName -n $FW_NAME
+az network firewall create -g $resourceGroupName -n $FW_NAME
 az network route-table create -g $KUBE_GROUP --name $FW_ROUTE_TABLE_NAME
 az network vnet subnet update --resource-group $KUBE_GROUP --route-table $FW_ROUTE_TABLE_NAME --ids $KUBE_AGENT_SUBNET_ID
 az network route-table route create --resource-group $KUBE_GROUP --name $FW_ROUTE_NAME --route-table-name $FW_ROUTE_TABLE_NAME --address-prefix 0.0.0.0/0 --next-hop-type VirtualAppliance --next-hop-ip-address $FW_PRIVATE_IP --subscription $SUBSCRIPTION_ID
 
+FW_PUBLIC_IP=$(az network public-ip show -g $KUBE_GROUP -n $FW_IP_NAME --query ipAddress)
 
 az network firewall network-rule create --firewall-name $FW_NAME --collection-name "aksnetwork" --destination-addresses "$HCP_IP"  --destination-ports 443 9000 --name "allow network" --protocols "TCP" --resource-group $KUBE_GROUP --source-addresses "*" --action "Allow" --description "aks network rule" --priority 100
 
