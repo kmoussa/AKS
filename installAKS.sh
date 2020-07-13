@@ -52,10 +52,10 @@ echo "What is the AKS DNS IP? i.e 10.2.0.10"
 read aksdnsIP
 
 out=$(uname -a)
-if [[ $(echo $out | grep -i azure) == 'azure' ]];then
+if [[ $(echo $out | grep -io azure) == 'azure' ]];then
 
 echo "no need to install jq, this is Azure cloud shell"
-elif [[ $(echo $out | grep -i linux) == 'Linux' ]];then
+elif [[ $(echo $out | grep -io linux) == 'Linux' ]];then
 
 apt-get install jq -y
 else
