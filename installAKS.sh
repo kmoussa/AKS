@@ -123,7 +123,8 @@ sed -i "s|<resourceGroupName>|${resourceGroupName}|g" helm-config.yaml
 sed -i "s|<applicationGatewayName>|${applicationGatewayName}|g" helm-config.yaml
 sed -i "s|<identityResourceId>|${identityResourceId}|g" helm-config.yaml
 sed -i "s|<identityClientId>|${identityClientId}|g" helm-config.yaml
-sed -i "s|led: false|led: true|g" helm-config.yaml
+sed -i "s|enabled: false|enabled: true|g" helm-config.yaml
+sed -i "s|usePrivateIP: false|usePrivateIP: true|g" helm-config.yaml
 
 helm install ingress-azure \
   -f helm-config.yaml \
