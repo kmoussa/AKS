@@ -35,20 +35,20 @@ echo "What is the name of your AKS Cluster?"
 read ClusterName
 echo "Which Azure DC you want to deploy your workloads?"
 read location
-echo "what is your Vnet address prefix for the whole deployment? i.e 10.0.0.0/8"
+echo "what is your Vnet address prefix for the whole deployment? i.e 10.0.0.0/16"
 read VnetAddressPrefix
-echo "what is your AKS Subnet prefix? i.e 10.0.0.0/16"
+echo "what is your AKS Subnet prefix? i.e 10.0.1.0/24"
 read aksSubnet
-echo "what is your app gateway Subnet prefix? i.e 10.1.0.0/24"
+echo "what is your app gateway Subnet prefix? i.e 10.0.2.0/24"
 read appGWSubnet
 echo "How many AKS worker nodes do you need to provision?"
 read workercount
 az aks get-versions --location $location --output table
-echo "What is the k8s version you want to deploy? i.e 1.15.10"
+echo "What is the k8s version you want to deploy? i.e 1.16.10"
 read k8sversion
-echo "What is the AKS service CIDR? i.e 10.2.0.0/16"
+echo "What is the AKS service CIDR? i.e 10.0.3.0/16"
 read aksservicecidr
-echo "What is the AKS DNS IP? i.e 10.2.0.10"
+echo "What is the AKS DNS IP? i.e 10.0.3.10"
 read aksdnsIP
 
 out=$(uname -a)
@@ -143,7 +143,7 @@ then
     printf "\n"
     echo "What is your firewall name?"
    read FW_NAME
-echo "what is your AZ Firewall Subnet prefix? i.e 10.2.0.0/24"
+echo "what is your AZ Firewall Subnet prefix? i.e 10.0.4.0/24"
 read AzFirewallSubnet
   #Install Firewall
 QUERYRESULT=$(az aks list --query "[?name=='$aksClusterName'].{rg:resourceGroup, id:id, loc:location, vnet:agentPoolProfiles[].vnetSubnetId, ver:kubernetesVersion, svpid: servicePrincipalProfile.clientId}" -o json)
