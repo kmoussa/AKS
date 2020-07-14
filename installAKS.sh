@@ -186,7 +186,7 @@ az network firewall update \
 az network public-ip show \
     --name $FW_PIP \
     --resource-group $resourceGroupName
-fwprivaddr="$(az network firewall ip-config list -g $resourceGroupName -f $FW_NAME --query "[?name=='FW-config'].privateIpAddress" --output tsv)"
+FW_PRIVATE_IP="$(az network firewall ip-config list -g $resourceGroupName -f $FW_NAME --query "[?name=='FW-config'].privateIpAddress" --output tsv)"
 
 az network route-table create -g $resourceGroupName --name $FW_ROUTE_TABLE_NAME
 #az network vnet subnet update --resource-group $resourceGroupName --route-table $FW_ROUTE_TABLE_NAME --ids $KUBE_AGENT_SUBNET_ID
