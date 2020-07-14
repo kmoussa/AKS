@@ -132,7 +132,7 @@ helm install ingress-azure \
   --version 1.2.0-rc3
 
 
-  curl https://raw.githubusercontent.com/Azure/application-gateway-kubernetes-ingress/master/docs/examples/aspnetapp.yaml -o aspnetapp.yaml
+#curl https://raw.githubusercontent.com/Azure/application-gateway-kubernetes-ingress/master/docs/examples/aspnetapp.yaml -o aspnetapp.yaml
 
   kubectl apply -f aspnetapp.yaml
 
