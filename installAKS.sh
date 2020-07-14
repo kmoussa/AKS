@@ -192,7 +192,7 @@ FW_PRIVATE_IP="$(az network firewall ip-config list -g $resourceGroupName -f $FW
 az network route-table create -g $resourceGroupName --name $FW_ROUTE_TABLE_NAME
 #az network vnet subnet update --resource-group $resourceGroupName --route-table $FW_ROUTE_TABLE_NAME --ids $KUBE_AGENT_SUBNET_ID
 az network vnet subnet update --resource-group $resourceGroupName --route-table $FW_ROUTE_TABLE_NAME --vnet-name $KUBE_VNET_NAME --name $KUBE_AGENT_SUBNET_NAME
-az network route-table route create --resource-group $resourceGroupName --name $FW_ROUTE_NAME --route-table-name $FW_ROUTE_TABLE_NAME --address-prefix 0.0.0.0/0 --next-hop-type VirtualAppliance --next-hop-ip-address $FW_PRIVATE_IP --subscription $SUBSCRIPTION_ID
+az network route-table route create --resource-group $resourceGroupName --name $FW_ROUTE_NAME --route-table-name $FW_ROUTE_TABLE_NAME --address-prefix 0.0.0.0/0 --next-hop-type VirtualAppliance --next-hop-ip-address $FW_PRIVATE_IP --subscription $subscriptionId
 
 FW_PUBLIC_IP=$(az network public-ip show -g $resourceGroupName -n $FW_PIP --query ipAddress)
 
