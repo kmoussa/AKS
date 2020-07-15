@@ -335,7 +335,7 @@
         "applicationGatewayPublicIpName": "[concat('appgwpublicip' , variables('resgpguid'))]",
         "kubernetesSubnetName": "kubesubnet",
         "applicationGatewaySubnetName": "appgwsubnet",
-        "aksClusterName": "[concat('aks' , variables('resgpguid'))]",
+        "aksClusterName": "variables('aksClusterName')",
         "vnetId": "[resourceId('Microsoft.Network/virtualNetworks', variables('vnetName'))]",
         "kubernetesSubnetId": "[concat(variables('vnetID'),'/subnets/', variables('kubernetesSubnetName'))]",
         "applicationGatewaySubnetId": "[concat(variables('vnetID'),'/subnets/', variables('applicationGatewaySubnetName'))]",
