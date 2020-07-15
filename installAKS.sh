@@ -130,7 +130,11 @@ helm install ingress-azure \
   -f helm-config.yaml \
   application-gateway-kubernetes-ingress/ingress-azure \
   --version 1.2.0-rc3
-
+QUERYRESULT=$(az aks list --query "[?name=='$aksClusterName'].{rg:resourceGroup, id:id, loc:location, vnet:agentPoolProfiles[].vnetSubnetId, ver:kubernetesVersion, svpid: servicePrincipalProfile.clientId}" -o json)
+KUBE_VNET_NAME=$(echo $QUERYRESULT | jq '.[0] .vnet[0]' | grep -oP '(?<=/virtualNetworks/).*?(?=/)')
+echo "Creating the application gateway internal frontend IP, what is the internal IP you want to assign? you chose this subnet space for the app gateway "$appGWSubnet
+read appgatewayprivIP
+az network application-gateway frontend-ip create --gateway-name $applicationGatewayName --name InternalFrontendIp --private-ip-address $appgatewayprivIP --resource-group $resourceGroupName --subnet $appGWSubnet --vnet-name $KUBE_VNET_NAME
 
 #curl https://raw.githubusercontent.com/Azure/application-gateway-kubernetes-ingress/master/docs/examples/aspnetapp.yaml -o aspnetapp.yaml
 
@@ -146,8 +150,7 @@ then
 echo "what is your AZ Firewall Subnet prefix? i.e 10.0.4.0/24"
 read AzFirewallSubnet
   #Install Firewall
-QUERYRESULT=$(az aks list --query "[?name=='$aksClusterName'].{rg:resourceGroup, id:id, loc:location, vnet:agentPoolProfiles[].vnetSubnetId, ver:kubernetesVersion, svpid: servicePrincipalProfile.clientId}" -o json)
-KUBE_VNET_NAME=$(echo $QUERYRESULT | jq '.[0] .vnet[0]' | grep -oP '(?<=/virtualNetworks/).*?(?=/)')
+
 KUBE_FW_SUBNET_NAME="AzureFirewallSubnet" # this you cannot change
 KUBE_ING_SUBNET_NAME="ingress-subnet" # here enter the name of your ingress subnet
 KUBE_AGENT_SUBNET_NAME=$(echo $QUERYRESULT | jq '.[0] .vnet[0]' | grep -oP '(?<=/subnets/).*?(?=")')
