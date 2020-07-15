@@ -39,6 +39,8 @@ echo "what is your AKS Subnet prefix? i.e 10.0.1.0/24"
 read aksSubnet
 echo "what is your app gateway Subnet prefix? i.e 10.0.2.0/24"
 read appGWSubnet
+echo "what is the internal IP you want to assign to the app Gateway?"
+read appgatewayprivIP
 echo "How many AKS worker nodes do you need to provision?"
 read workercount
 az aks get-versions --location $location --output table
@@ -130,8 +132,7 @@ helm install ingress-azure \
   --version 1.2.0-rc3
 QUERYRESULT=$(az aks list --query "[?name=='$aksClusterName'].{rg:resourceGroup, id:id, loc:location, vnet:agentPoolProfiles[].vnetSubnetId, ver:kubernetesVersion, svpid: servicePrincipalProfile.clientId}" -o json)
 KUBE_VNET_NAME=$(echo $QUERYRESULT | jq '.[0] .vnet[0]' | grep -oP '(?<=/virtualNetworks/).*?(?=/)')
-echo "Creating the application gateway internal frontend IP, what is the internal IP you want to assign? you chose this subnet space for the app gateway $appGWSubnet"
-read appgatewayprivIP
+
 az network application-gateway frontend-ip create --gateway-name $applicationGatewayName --name InternalFrontendIp --private-ip-address $appgatewayprivIP --resource-group $resourceGroupName --subnet $appGWSubnet --vnet-name $KUBE_VNET_NAME
 
 #curl https://raw.githubusercontent.com/Azure/application-gateway-kubernetes-ingress/master/docs/examples/aspnetapp.yaml -o aspnetapp.yaml
