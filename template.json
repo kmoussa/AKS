@@ -281,7 +281,7 @@
             }
         },
         "kubernetesVersion": {
-            "defaultValue": "1.15.10",
+            "defaultValue": "1.16.10",
             "type": "string",
             "metadata": {
                 "description": "The version of Kubernetes."
@@ -335,7 +335,7 @@
         "applicationGatewayPublicIpName": "[concat('appgwpublicip' , variables('resgpguid'))]",
         "kubernetesSubnetName": "kubesubnet",
         "applicationGatewaySubnetName": "appgwsubnet",
-        "aksClusterName": "variables('aksClusterName')",
+        "aksClusterName": "[concat('aks' , variables('resgpguid'))]",
         "vnetId": "[resourceId('Microsoft.Network/virtualNetworks', variables('vnetName'))]",
         "kubernetesSubnetId": "[concat(variables('vnetID'),'/subnets/', variables('kubernetesSubnetName'))]",
         "applicationGatewaySubnetId": "[concat(variables('vnetID'),'/subnets/', variables('applicationGatewaySubnetName'))]",
