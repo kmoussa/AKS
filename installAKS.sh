@@ -83,6 +83,7 @@ cat <<EOF > parameters.json
   "aksServiceCIDR": { "value": "$aksservicecidr" },
   "aksDnsServiceIP": { "value": "$aksdnsIP" },
   "aksEnableRBAC": { "value": true }
+  "aksClusterName": { "value": "$ClusterName" }
 }
 EOF
 
