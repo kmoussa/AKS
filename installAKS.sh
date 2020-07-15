@@ -82,7 +82,7 @@ cat <<EOF > parameters.json
   "kubernetesVersion": { "value": "$k8sversion" },
   "aksServiceCIDR": { "value": "$aksservicecidr" },
   "aksDnsServiceIP": { "value": "$aksdnsIP" },
-  "aksEnableRBAC": { "value": true }
+  "aksEnableRBAC": { "value": true },
   "aksClusterName": { "value": "$ClusterName" }
 }
 EOF
