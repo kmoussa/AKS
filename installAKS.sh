@@ -31,8 +31,6 @@ echo "Type your resource group Name:"
 read resourceGroupName
 echo "What is your deployment name?"
 read deploymentName
-echo "What is the name of your AKS Cluster?"
-read ClusterName
 echo "Which Azure DC you want to deploy your workloads?"
 read location
 echo "what is your Vnet address prefix for the whole deployment? i.e 10.0.0.0/16"
@@ -83,7 +81,6 @@ cat <<EOF > parameters.json
   "aksServiceCIDR": { "value": "$aksservicecidr" },
   "aksDnsServiceIP": { "value": "$aksdnsIP" },
   "aksEnableRBAC": { "value": true },
-  "aksClusterName": { "value": "$ClusterName" }
 }
 EOF
 
