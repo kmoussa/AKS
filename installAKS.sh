@@ -146,9 +146,12 @@ helm install ingress-azure \
 QUERYRESULT=$(az aks list --query "[?name=='$aksClusterName'].{rg:resourceGroup, id:id, loc:location, vnet:agentPoolProfiles[].vnetSubnetId, ver:kubernetesVersion, svpid: servicePrincipalProfile.clientId}" -o json)
 KUBE_VNET_NAME=$(echo $QUERYRESULT | jq '.[0] .vnet[0]' | grep -oP '(?<=/virtualNetworks/).*?(?=/)')
 #create app gateway Internal Frontend IP
-az network application-gateway frontend-ip update --add --gateway-name $applicationGatewayName --name InternalFrontendIp --private-ip-address $appgatewayprivIP --resource-group $resourceGroupName --subnet 'appgwsubnet' --vnet-name $KUBE_VNET_NAME
+echo $appgatewayprivIP
+echo $applicationGatewayName
+echo $resourceGroupName
+echo $KUBE_VNET_NAME
+az network application-gateway frontend-ip create --gateway-name $applicationGatewayName --name InternalFrontendIp --private-ip-address $appgatewayprivIP --resource-group $resourceGroupName --subnet 'appgwsubnet' --vnet-name $KUBE_VNET_NAME
 
-#curl https://raw.githubusercontent.com/Azure/application-gateway-kubernetes-ingress/master/docs/examples/aspnetapp.yaml -o aspnetapp.yaml
 if [[ $(echo $templatepath | grep -io win) == 'win' ]];then
 kubectl apply -f aspnetapp.yaml
 else
@@ -171,7 +174,6 @@ KUBE_FW_SUBNET_NAME="AzureFirewallSubnet" # this you cannot change
 #KUBE_ING_SUBNET_NAME="ingress-subnet" # here enter the name of your ingress subnet
 KUBE_AGENT_SUBNET_NAME=$(echo $QUERYRESULT | jq '.[0] .vnet[0]' | grep -oP '(?<=/subnets/).*?(?=")')
 
-
 az network vnet subnet create -g $resourceGroupName --vnet-name $KUBE_VNET_NAME -n $KUBE_FW_SUBNET_NAME --address-prefix $AzFirewallSubnet
 
 az extension add --name azure-firewall
@@ -182,8 +184,6 @@ FW_ROUTE_NAME="${FW_NAME}_fw_r"
 FW_ROUTE_TABLE_NAME="${FW_NAME}_fw_rt"
 FW_PIP="${FW_NAME}_pip"
 
-#echo "what is your desired private IP for the AZ firewall?"
-#read FW_PRIVATE_IP
 HCP_IP=$(kubectl get endpoints -o=jsonpath='{.items[?(@.metadata.name == "kubernetes")].subsets[].addresses[].ip}')
 
 az network firewall create \
@@ -209,16 +209,13 @@ az network public-ip show \
 FW_PRIVATE_IP="$(az network firewall ip-config list -g $resourceGroupName -f $FW_NAME --query "[?name=='FW-config'].privateIpAddress" --output tsv)"
 
 az network route-table create -g $resourceGroupName --name $FW_ROUTE_TABLE_NAME
-#az network vnet subnet update --resource-group $resourceGroupName --route-table $FW_ROUTE_TABLE_NAME --ids $KUBE_AGENT_SUBNET_ID
 az network vnet subnet update --resource-group $resourceGroupName --route-table $FW_ROUTE_TABLE_NAME --vnet-name $KUBE_VNET_NAME --name $KUBE_AGENT_SUBNET_NAME
 az network route-table route create --resource-group $resourceGroupName --name $FW_ROUTE_NAME --route-table-name $FW_ROUTE_TABLE_NAME --address-prefix 0.0.0.0/0 --next-hop-type VirtualAppliance --next-hop-ip-address $FW_PRIVATE_IP --subscription $subscriptionId
 
 FW_PUBLIC_IP=$(az network public-ip show -g $resourceGroupName -n $FW_PIP --query ipAddress)
 
 az network firewall network-rule create --firewall-name $FW_NAME --collection-name "aksnetwork" --destination-addresses "$HCP_IP"  --destination-ports 443 9000 --name "allow network" --protocols "TCP" --resource-group $resourceGroupName --source-addresses "*" --action "Allow" --description "aks network rule" --priority 100
-
 az network firewall application-rule create  --firewall-name $FW_NAME --collection-name "aksbasics" --name "allow network" --protocols http=80 https=443 --source-addresses "*" --resource-group $resourceGroupName --action "Allow" --target-fqdns "*.azmk8s.io" "aksrepos.azurecr.io" "*.blob.core.windows.net" "mcr.microsoft.com" "*.cdn.mscr.io" "management.azure.com" "login.microsoftonline.com" "api.snapcraft.io" "*auth.docker.io" "*cloudflare.docker.io" "*cloudflare.docker.com" "*registry-1.docker.io" --priority 100
-
 az network firewall application-rule create  --firewall-name $FW_NAME --collection-name "akstools" --name "allow network" --protocols http=80 https=443 --source-addresses "*" --resource-group $resourceGroupName --action "Allow" --target-fqdns "download.opensuse.org" "packages.microsoft.com" "dc.services.visualstudio.com" "*.opinsights.azure.com" "*.monitoring.azure.com" "gov-prod-policy-data.trafficmanager.net" "apt.dockerproject.org" "nvidia.github.io" --priority 101
 az network firewall application-rule create  --firewall-name $FW_NAME --collection-name "osupdates" --name "allow network" --protocols http=80 https=443 --source-addresses "*" --resource-group $resourceGroupName --action "Allow" --target-fqdns "download.opensuse.org" "*.ubuntu.com" "packages.microsoft.com" "snapcraft.io" "api.snapcraft.io"  --priority 102
 
