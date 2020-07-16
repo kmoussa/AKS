@@ -33,6 +33,17 @@ echo "What is your deployment name?"
 read deploymentName
 echo "Which Azure DC you want to deploy your workloads?"
 read location
+echo "Would you like to deploy an AKS cluster with Windows Containers capability? : (Y/N)"
+read windows
+if [[ $(echo $windows | grep -io y) == 'y' ]];then
+echo "Proceeding with windows..."
+
+elif [[ $(echo $out | grep -io n) == 'n' ]];then
+echo "Proceeding with linux..."
+else
+echo "you chose an invalid answer ... quiting the script."
+exit 0;
+fi
 echo "what is your Vnet address prefix for the whole deployment? i.e 10.0.0.0/16"
 read VnetAddressPrefix
 echo "what is your AKS Subnet prefix? i.e 10.0.1.0/24"
