@@ -172,6 +172,7 @@ read AzFirewallSubnet
 #KUBE_VNET_NAME=$(echo $QUERYRESULT | jq '.[0] .vnet[0]' | grep -oP '(?<=/virtualNetworks/).*?(?=/)')
 KUBE_FW_SUBNET_NAME="AzureFirewallSubnet" # this you cannot change
 #KUBE_ING_SUBNET_NAME="ingress-subnet" # here enter the name of your ingress subnet
+echo $QUERYRESULT
 KUBE_AGENT_SUBNET_NAME=$(echo $QUERYRESULT | jq '.[0] .vnet[0]' | grep -oP '(?<=/subnets/).*?(?=")')
 
 az network vnet subnet create -g $resourceGroupName --vnet-name $KUBE_VNET_NAME -n $KUBE_FW_SUBNET_NAME --address-prefix $AzFirewallSubnet
