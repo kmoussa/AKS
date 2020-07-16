@@ -34,12 +34,13 @@ read deploymentName
 echo "Which Azure DC you want to deploy your workloads?"
 read location
 echo "Would you like to deploy an AKS cluster with Windows Containers capability? : (Y/N)"
-read windows
-if [[ $(echo $windows | grep -io y) == 'y' ]];then
+read templatepath
+if [[ $(echo $templatepath | grep -io y) == 'y' ]];then
 echo "Proceeding with windows..."
-
-elif [[ $(echo $out | grep -io n) == 'n' ]];then
+templatepath=wintemplate.json
+elif [[ $(echo $templatepath | grep -io n) == 'n' ]];then
 echo "Proceeding with linux..."
+templatepath=template.json
 else
 echo "you chose an invalid answer ... quiting the script."
 exit 0;
@@ -104,7 +105,7 @@ az group create -n $resourceGroupName -l $location
 az deployment group create \
         -g $resourceGroupName \
         -n $deploymentName \
-        --template-file template.json \
+        --template-file $templatepath \
         --parameters parameters.json
 
 
@@ -140,15 +141,19 @@ sed -i "s|usePrivateIP: false|usePrivateIP: true|g" helm-config.yaml
 helm install ingress-azure \
   -f helm-config.yaml \
   application-gateway-kubernetes-ingress/ingress-azure \
-  --version 1.2.0-rc3
+    --set nodeSelector."beta\.kubernetes\.io/os"=linux \
+    --version 1.2.0-rc3
 QUERYRESULT=$(az aks list --query "[?name=='$aksClusterName'].{rg:resourceGroup, id:id, loc:location, vnet:agentPoolProfiles[].vnetSubnetId, ver:kubernetesVersion, svpid: servicePrincipalProfile.clientId}" -o json)
 KUBE_VNET_NAME=$(echo $QUERYRESULT | jq '.[0] .vnet[0]' | grep -oP '(?<=/virtualNetworks/).*?(?=/)')
 #create app gateway Internal Frontend IP
 az network application-gateway frontend-ip create --gateway-name $applicationGatewayName --name InternalFrontendIp --private-ip-address $appgatewayprivIP --resource-group $resourceGroupName --subnet 'appgwsubnet' --vnet-name $KUBE_VNET_NAME
 
 #curl https://raw.githubusercontent.com/Azure/application-gateway-kubernetes-ingress/master/docs/examples/aspnetapp.yaml -o aspnetapp.yaml
-
+if [[ $(echo $templatepath | grep -io win) == 'win' ]];then
 kubectl apply -f aspnetapp.yaml
+else
+kubectl apply -f aspnetappwin.yaml
+fi
 
 read -p "Do you want to add Azure Firewall to the deployment? " -n 1 -r
 
