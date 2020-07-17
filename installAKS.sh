@@ -169,19 +169,11 @@ aksClusterName=$(jq -r ".aksClusterName.value" deployment-outputs.json)
 resourceGroupName=$(jq -r ".resourceGroupName.value" deployment-outputs.json)
 QUERYRESULT=$(az aks list --query "[?name=='$aksClusterName'].{rg:resourceGroup, id:id, loc:location, vnet:agentPoolProfiles[].vnetSubnetId, ver:kubernetesVersion, svpid: servicePrincipalProfile.clientId}" -o json)
 KUBE_VNET_NAME=$(echo $QUERYRESULT | jq '.[0] .vnet[0]' | grep -oP '(?<=/virtualNetworks/).*?(?=/)')
-KUBE_FW_SUBNET_NAME='AzureFirewallSubnet' # this you cannot change
+#KUBE_FW_SUBNET_NAME='AzureFirewallSubnet' # this you cannot change
 KUBE_AGENT_SUBNET_NAME=$(echo $QUERYRESULT | jq '.[0] .vnet[0]' | grep -oP '(?<=/subnets/).*?(?=")')
-echo $resourceGroupName
-echo $KUBE_VNET_NAME
-echo $KUBE_FW_SUBNET_NAME
-echo $AzFirewallSubnet
-echo "az network vnet subnet create -g $resourceGroupName --vnet-name $KUBE_VNET_NAME -n $KUBE_FW_SUBNET_NAME --address-prefix $AzFirewallSubnet"
-az network vnet subnet create -g $resourceGroupName --vnet-name $KUBE_VNET_NAME --name $KUBE_FW_SUBNET_NAME --address-prefix $AzFirewallSubnet
-echo $resourceGroupName
-echo $KUBE_VNET_NAME
-echo $KUBE_FW_SUBNET_NAME
-echo $AzFirewallSubnet
-echo "done"
+
+az network vnet subnet create -g $resourceGroupName --vnet-name $KUBE_VNET_NAME --name AzureFirewallSubnet --address-prefix $AzFirewallSubnet
+
 az extension add --name azure-firewall
 
 KUBE_AGENT_SUBNET_ID=$(echo $QUERYRESULT | jq '.[0] .vnet[0]')
