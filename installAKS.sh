@@ -158,18 +158,15 @@ else
 kubectl apply -f aspnetappwin.yaml
 fi
 
-read -p "Do you want to add Azure Firewall to the deployment? " -n 1 -r
-
-if [[  $REPLY =~ ^[Yy]$ ]]
-then
-    printf "\n"
-    echo "What is your firewall name?"
-   read FW_NAME
+echo "Do you want to add Azure Firewall to the deployment? :(Y/N) "
+read answer
+if [[ $(echo $answer | grep -io y) == 'y' ]];then
+echo "What is your firewall name?"
+read FW_NAME
 echo "what is your AZ Firewall Subnet prefix? i.e 10.0.4.0/24"
 read AzFirewallSubnet
-  #Install Firewall
+ #Install Firewall
 KUBE_FW_SUBNET_NAME='AzureFirewallSubnet' # this you cannot change
-
 KUBE_AGENT_SUBNET_NAME=$(echo $QUERYRESULT | jq '.[0] .vnet[0]' | grep -oP '(?<=/subnets/).*?(?=")')
 az network vnet subnet create -g $resourceGroupName --vnet-name $KUBE_VNET_NAME -n $KUBE_FW_SUBNET_NAME --address-prefix $AzFirewallSubnet
 az extension add --name azure-firewall
