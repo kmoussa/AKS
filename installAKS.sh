@@ -143,8 +143,11 @@ helm install ingress-azure \
   application-gateway-kubernetes-ingress/ingress-azure \
     --set nodeSelector."beta\.kubernetes\.io/os"=linux \
     --version 1.2.0-rc3
+
 QUERYRESULT=$(az aks list --query "[?name=='$aksClusterName'].{rg:resourceGroup, id:id, loc:location, vnet:agentPoolProfiles[].vnetSubnetId, ver:kubernetesVersion, svpid: servicePrincipalProfile.clientId}" -o json)
 KUBE_VNET_NAME=$(echo $QUERYRESULT | jq '.[0] .vnet[0]' | grep -oP '(?<=/virtualNetworks/).*?(?=/)')
+KUBE_FW_SUBNET_NAME='AzureFirewallSubnet' # this you cannot change
+KUBE_AGENT_SUBNET_NAME=$(echo $QUERYRESULT | jq '.[0] .vnet[0]' | grep -oP '(?<=/subnets/).*?(?=")')
 #create app gateway Internal Frontend IP
 echo $appgatewayprivIP
 echo $applicationGatewayName
@@ -157,7 +160,10 @@ kubectl apply -f aspnetapp.yaml
 else
 kubectl apply -f aspnetappwin.yaml
 fi
-
+echo $appgatewayprivIP
+echo $applicationGatewayName
+echo $resourceGroupName
+echo $KUBE_VNET_NAME
 echo "Do you want to add Azure Firewall to the deployment? :(Y/N) "
 read answer
 if [[ $(echo $answer | grep -io y) == 'y' ]];then
@@ -166,9 +172,17 @@ read FW_NAME
 echo "what is your AZ Firewall Subnet prefix? i.e 10.0.4.0/24"
 read AzFirewallSubnet
  #Install Firewall
-echo $resourceGroupName
+ echo $resourceGroupName
+echo $KUBE_VNET_NAME
+echo $KUBE_FW_SUBNET_NAME
+echo $AzFirewallSubnet
+aksClusterName=$(jq -r ".aksClusterName.value" deployment-outputs.json)
+resourceGroupName=$(jq -r ".resourceGroupName.value" deployment-outputs.json)
+QUERYRESULT=$(az aks list --query "[?name=='$aksClusterName'].{rg:resourceGroup, id:id, loc:location, vnet:agentPoolProfiles[].vnetSubnetId, ver:kubernetesVersion, svpid: servicePrincipalProfile.clientId}" -o json)
+KUBE_VNET_NAME=$(echo $QUERYRESULT | jq '.[0] .vnet[0]' | grep -oP '(?<=/virtualNetworks/).*?(?=/)')
 KUBE_FW_SUBNET_NAME='AzureFirewallSubnet' # this you cannot change
 KUBE_AGENT_SUBNET_NAME=$(echo $QUERYRESULT | jq '.[0] .vnet[0]' | grep -oP '(?<=/subnets/).*?(?=")')
+echo $resourceGroupName
 echo $KUBE_VNET_NAME
 echo $KUBE_FW_SUBNET_NAME
 echo $AzFirewallSubnet
