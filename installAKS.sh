@@ -168,15 +168,10 @@ then
 echo "what is your AZ Firewall Subnet prefix? i.e 10.0.4.0/24"
 read AzFirewallSubnet
   #Install Firewall
-#QUERYRESULT=$(az aks list --query "[?name=='$aksClusterName'].{rg:resourceGroup, id:id, loc:location, vnet:agentPoolProfiles[].vnetSubnetId, ver:kubernetesVersion, svpid: servicePrincipalProfile.clientId}" -o json)
-#KUBE_VNET_NAME=$(echo $QUERYRESULT | jq '.[0] .vnet[0]' | grep -oP '(?<=/virtualNetworks/).*?(?=/)')
 KUBE_FW_SUBNET_NAME='AzureFirewallSubnet' # this you cannot change
-#KUBE_ING_SUBNET_NAME="ingress-subnet" # here enter the name of your ingress subnet
-echo $QUERYRESULT
+
 KUBE_AGENT_SUBNET_NAME=$(echo $QUERYRESULT | jq '.[0] .vnet[0]' | grep -oP '(?<=/subnets/).*?(?=")')
-
 az network vnet subnet create -g $resourceGroupName --vnet-name $KUBE_VNET_NAME -n $KUBE_FW_SUBNET_NAME --address-prefix $AzFirewallSubnet
-
 az extension add --name azure-firewall
 
 KUBE_AGENT_SUBNET_ID=$(echo $QUERYRESULT | jq '.[0] .vnet[0]')
@@ -222,9 +217,8 @@ az network firewall application-rule create  --firewall-name $FW_NAME --collecti
 
 #Getting the ingress public IP of the Ingress of the aspnetapp (will replace this later on with the Internal IP as you should expose the service throught the cluster Internal IP not a load Balancer)
 SERVICE_IP=$(kubectl get ingress aspnetapp --template="{{range .status.loadBalancer.ingress}}{{.ip}}{{end}}")
-az network firewall nat-rule create  --firewall-name $FW_NAME --collection-name "inboundlbrules" --name "allow inbound load balancers" --protocols "TCP" --source-addresses "*" --resource-group $resourceGroupName --action "Dnat"  --destination-addresses $FW_PUBLIC_IP --destination-ports 80 --translated-address $SERVICE_IP --translated-port "80"  --priority 101
+az network firewall nat-rule create  --firewall-name $FW_NAME --collection-name "inboundlbrules" --name "allow inbound load balancers" --protocols "TCP" --source-addresses "*" --resource-group $resourceGroupName --action "Dnat" --source-addresses "*"  --destination-addresses $FW_PUBLIC_IP --destination-ports 80 --translated-address $SERVICE_IP --translated-port "80"  --priority 101
     echo "Your deployment is finished successfully..."
-
 else
     echo "Your deployment is finished successfully..."
 fi
