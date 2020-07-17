@@ -165,7 +165,6 @@ read FW_NAME
 echo "what is your AZ Firewall Subnet prefix? i.e 10.0.4.0/24"
 read AzFirewallSubnet
  #Install Firewall
-sleep 20
 aksClusterName=$(jq -r ".aksClusterName.value" deployment-outputs.json)
 resourceGroupName=$(jq -r ".resourceGroupName.value" deployment-outputs.json)
 QUERYRESULT=$(az aks list --query "[?name=='$aksClusterName'].{rg:resourceGroup, id:id, loc:location, vnet:agentPoolProfiles[].vnetSubnetId, ver:kubernetesVersion, svpid: servicePrincipalProfile.clientId}" -o json)
@@ -177,7 +176,7 @@ echo $KUBE_VNET_NAME
 echo $KUBE_FW_SUBNET_NAME
 echo $AzFirewallSubnet
 echo "az network vnet subnet create -g $resourceGroupName --vnet-name $KUBE_VNET_NAME -n $KUBE_FW_SUBNET_NAME --address-prefix $AzFirewallSubnet"
-az network vnet subnet create -g $resourceGroupName --vnet-name $KUBE_VNET_NAME -name $KUBE_FW_SUBNET_NAME --address-prefix $AzFirewallSubnet
+az network vnet subnet create -g $resourceGroupName --vnet-name $KUBE_VNET_NAME --name $KUBE_FW_SUBNET_NAME --address-prefix $AzFirewallSubnet
 echo $resourceGroupName
 echo $KUBE_VNET_NAME
 echo $KUBE_FW_SUBNET_NAME
