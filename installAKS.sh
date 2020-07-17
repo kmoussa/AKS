@@ -143,37 +143,51 @@ helm install ingress-azure \
   application-gateway-kubernetes-ingress/ingress-azure \
     --set nodeSelector."beta\.kubernetes\.io/os"=linux \
     --version 1.2.0-rc3
+
 QUERYRESULT=$(az aks list --query "[?name=='$aksClusterName'].{rg:resourceGroup, id:id, loc:location, vnet:agentPoolProfiles[].vnetSubnetId, ver:kubernetesVersion, svpid: servicePrincipalProfile.clientId}" -o json)
 KUBE_VNET_NAME=$(echo $QUERYRESULT | jq '.[0] .vnet[0]' | grep -oP '(?<=/virtualNetworks/).*?(?=/)')
+KUBE_FW_SUBNET_NAME='AzureFirewallSubnet' # this you cannot change
+KUBE_AGENT_SUBNET_NAME=$(echo $QUERYRESULT | jq '.[0] .vnet[0]' | grep -oP '(?<=/subnets/).*?(?=")')
 #create app gateway Internal Frontend IP
+echo $appgatewayprivIP
+echo $applicationGatewayName
+echo $resourceGroupName
+echo $KUBE_VNET_NAME
 az network application-gateway frontend-ip create --gateway-name $applicationGatewayName --name InternalFrontendIp --private-ip-address $appgatewayprivIP --resource-group $resourceGroupName --subnet 'appgwsubnet' --vnet-name $KUBE_VNET_NAME
 
-#curl https://raw.githubusercontent.com/Azure/application-gateway-kubernetes-ingress/master/docs/examples/aspnetapp.yaml -o aspnetapp.yaml
 if [[ $(echo $templatepath | grep -io win) == 'win' ]];then
 kubectl apply -f aspnetapp.yaml
 else
 kubectl apply -f aspnetappwin.yaml
 fi
-
-read -p "Do you want to add Azure Firewall to the deployment? " -n 1 -r
-
-if [[  $REPLY =~ ^[Yy]$ ]]
-then
-    printf "\n"
-    echo "What is your firewall name?"
-   read FW_NAME
+echo $appgatewayprivIP
+echo $applicationGatewayName
+echo $resourceGroupName
+echo $KUBE_VNET_NAME
+echo "Do you want to add Azure Firewall to the deployment? :(Y/N) "
+read answer
+if [[ $(echo $answer | grep -io y) == 'y' ]];then
+echo "What is your firewall name?"
+read FW_NAME
 echo "what is your AZ Firewall Subnet prefix? i.e 10.0.4.0/24"
 read AzFirewallSubnet
-  #Install Firewall
-#QUERYRESULT=$(az aks list --query "[?name=='$aksClusterName'].{rg:resourceGroup, id:id, loc:location, vnet:agentPoolProfiles[].vnetSubnetId, ver:kubernetesVersion, svpid: servicePrincipalProfile.clientId}" -o json)
-#KUBE_VNET_NAME=$(echo $QUERYRESULT | jq '.[0] .vnet[0]' | grep -oP '(?<=/virtualNetworks/).*?(?=/)')
-KUBE_FW_SUBNET_NAME="AzureFirewallSubnet" # this you cannot change
-#KUBE_ING_SUBNET_NAME="ingress-subnet" # here enter the name of your ingress subnet
+ #Install Firewall
+ echo $resourceGroupName
+echo $KUBE_VNET_NAME
+echo $KUBE_FW_SUBNET_NAME
+echo $AzFirewallSubnet
+aksClusterName=$(jq -r ".aksClusterName.value" deployment-outputs.json)
+resourceGroupName=$(jq -r ".resourceGroupName.value" deployment-outputs.json)
+QUERYRESULT=$(az aks list --query "[?name=='$aksClusterName'].{rg:resourceGroup, id:id, loc:location, vnet:agentPoolProfiles[].vnetSubnetId, ver:kubernetesVersion, svpid: servicePrincipalProfile.clientId}" -o json)
+KUBE_VNET_NAME=$(echo $QUERYRESULT | jq '.[0] .vnet[0]' | grep -oP '(?<=/virtualNetworks/).*?(?=/)')
+KUBE_FW_SUBNET_NAME='AzureFirewallSubnet' # this you cannot change
 KUBE_AGENT_SUBNET_NAME=$(echo $QUERYRESULT | jq '.[0] .vnet[0]' | grep -oP '(?<=/subnets/).*?(?=")')
-
-
+echo $resourceGroupName
+echo $KUBE_VNET_NAME
+echo $KUBE_FW_SUBNET_NAME
+echo $AzFirewallSubnet
 az network vnet subnet create -g $resourceGroupName --vnet-name $KUBE_VNET_NAME -n $KUBE_FW_SUBNET_NAME --address-prefix $AzFirewallSubnet
-
+echo "done"
 az extension add --name azure-firewall
 
 KUBE_AGENT_SUBNET_ID=$(echo $QUERYRESULT | jq '.[0] .vnet[0]')
@@ -182,8 +196,6 @@ FW_ROUTE_NAME="${FW_NAME}_fw_r"
 FW_ROUTE_TABLE_NAME="${FW_NAME}_fw_rt"
 FW_PIP="${FW_NAME}_pip"
 
-#echo "what is your desired private IP for the AZ firewall?"
-#read FW_PRIVATE_IP
 HCP_IP=$(kubectl get endpoints -o=jsonpath='{.items[?(@.metadata.name == "kubernetes")].subsets[].addresses[].ip}')
 
 az network firewall create \
@@ -209,24 +221,20 @@ az network public-ip show \
 FW_PRIVATE_IP="$(az network firewall ip-config list -g $resourceGroupName -f $FW_NAME --query "[?name=='FW-config'].privateIpAddress" --output tsv)"
 
 az network route-table create -g $resourceGroupName --name $FW_ROUTE_TABLE_NAME
-#az network vnet subnet update --resource-group $resourceGroupName --route-table $FW_ROUTE_TABLE_NAME --ids $KUBE_AGENT_SUBNET_ID
 az network vnet subnet update --resource-group $resourceGroupName --route-table $FW_ROUTE_TABLE_NAME --vnet-name $KUBE_VNET_NAME --name $KUBE_AGENT_SUBNET_NAME
 az network route-table route create --resource-group $resourceGroupName --name $FW_ROUTE_NAME --route-table-name $FW_ROUTE_TABLE_NAME --address-prefix 0.0.0.0/0 --next-hop-type VirtualAppliance --next-hop-ip-address $FW_PRIVATE_IP --subscription $subscriptionId
 
 FW_PUBLIC_IP=$(az network public-ip show -g $resourceGroupName -n $FW_PIP --query ipAddress)
 
 az network firewall network-rule create --firewall-name $FW_NAME --collection-name "aksnetwork" --destination-addresses "$HCP_IP"  --destination-ports 443 9000 --name "allow network" --protocols "TCP" --resource-group $resourceGroupName --source-addresses "*" --action "Allow" --description "aks network rule" --priority 100
-
 az network firewall application-rule create  --firewall-name $FW_NAME --collection-name "aksbasics" --name "allow network" --protocols http=80 https=443 --source-addresses "*" --resource-group $resourceGroupName --action "Allow" --target-fqdns "*.azmk8s.io" "aksrepos.azurecr.io" "*.blob.core.windows.net" "mcr.microsoft.com" "*.cdn.mscr.io" "management.azure.com" "login.microsoftonline.com" "api.snapcraft.io" "*auth.docker.io" "*cloudflare.docker.io" "*cloudflare.docker.com" "*registry-1.docker.io" --priority 100
-
 az network firewall application-rule create  --firewall-name $FW_NAME --collection-name "akstools" --name "allow network" --protocols http=80 https=443 --source-addresses "*" --resource-group $resourceGroupName --action "Allow" --target-fqdns "download.opensuse.org" "packages.microsoft.com" "dc.services.visualstudio.com" "*.opinsights.azure.com" "*.monitoring.azure.com" "gov-prod-policy-data.trafficmanager.net" "apt.dockerproject.org" "nvidia.github.io" --priority 101
 az network firewall application-rule create  --firewall-name $FW_NAME --collection-name "osupdates" --name "allow network" --protocols http=80 https=443 --source-addresses "*" --resource-group $resourceGroupName --action "Allow" --target-fqdns "download.opensuse.org" "*.ubuntu.com" "packages.microsoft.com" "snapcraft.io" "api.snapcraft.io"  --priority 102
 
 #Getting the ingress public IP of the Ingress of the aspnetapp (will replace this later on with the Internal IP as you should expose the service throught the cluster Internal IP not a load Balancer)
 SERVICE_IP=$(kubectl get ingress aspnetapp --template="{{range .status.loadBalancer.ingress}}{{.ip}}{{end}}")
-az network firewall nat-rule create  --firewall-name $FW_NAME --collection-name "inboundlbrules" --name "allow inbound load balancers" --protocols "TCP" --source-addresses "*" --resource-group $resourceGroupName --action "Dnat"  --destination-addresses $FW_PUBLIC_IP --destination-ports 80 --translated-address $SERVICE_IP --translated-port "80"  --priority 101
+az network firewall nat-rule create  --firewall-name $FW_NAME --collection-name "inboundlbrules" --name "allow inbound load balancers" --protocols "TCP" --source-addresses "*" --resource-group $resourceGroupName --action "Dnat" --source-addresses "*"  --destination-addresses $FW_PUBLIC_IP --destination-ports 80 --translated-address $SERVICE_IP --translated-port "80"  --priority 101
     echo "Your deployment is finished successfully..."
-
 else
     echo "Your deployment is finished successfully..."
 fi
