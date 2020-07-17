@@ -176,6 +176,7 @@ echo $resourceGroupName
 echo $KUBE_VNET_NAME
 echo $KUBE_FW_SUBNET_NAME
 echo $AzFirewallSubnet
+echo "az network vnet subnet create -g $resourceGroupName --vnet-name $KUBE_VNET_NAME -n $KUBE_FW_SUBNET_NAME --address-prefix $AzFirewallSubnet"
 az network vnet subnet create -g $resourceGroupName --vnet-name $KUBE_VNET_NAME -n $KUBE_FW_SUBNET_NAME --address-prefix $AzFirewallSubnet
 echo $resourceGroupName
 echo $KUBE_VNET_NAME
