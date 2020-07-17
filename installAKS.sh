@@ -149,10 +149,6 @@ KUBE_VNET_NAME=$(echo $QUERYRESULT | jq '.[0] .vnet[0]' | grep -oP '(?<=/virtual
 KUBE_FW_SUBNET_NAME='AzureFirewallSubnet' # this you cannot change
 KUBE_AGENT_SUBNET_NAME=$(echo $QUERYRESULT | jq '.[0] .vnet[0]' | grep -oP '(?<=/subnets/).*?(?=")')
 #create app gateway Internal Frontend IP
-echo $appgatewayprivIP
-echo $applicationGatewayName
-echo $resourceGroupName
-echo $KUBE_VNET_NAME
 az network application-gateway frontend-ip create --gateway-name $applicationGatewayName --name InternalFrontendIp --private-ip-address $appgatewayprivIP --resource-group $resourceGroupName --subnet 'appgwsubnet' --vnet-name $KUBE_VNET_NAME
 
 if [[ $(echo $templatepath | grep -io win) == 'win' ]];then
@@ -160,10 +156,7 @@ kubectl apply -f aspnetapp.yaml
 else
 kubectl apply -f aspnetappwin.yaml
 fi
-echo $appgatewayprivIP
-echo $applicationGatewayName
-echo $resourceGroupName
-echo $KUBE_VNET_NAME
+
 echo "Do you want to add Azure Firewall to the deployment? :(Y/N) "
 read answer
 if [[ $(echo $answer | grep -io y) == 'y' ]];then
@@ -172,10 +165,7 @@ read FW_NAME
 echo "what is your AZ Firewall Subnet prefix? i.e 10.0.4.0/24"
 read AzFirewallSubnet
  #Install Firewall
- echo $resourceGroupName
-echo $KUBE_VNET_NAME
-echo $KUBE_FW_SUBNET_NAME
-echo $AzFirewallSubnet
+sleep 20
 aksClusterName=$(jq -r ".aksClusterName.value" deployment-outputs.json)
 resourceGroupName=$(jq -r ".resourceGroupName.value" deployment-outputs.json)
 QUERYRESULT=$(az aks list --query "[?name=='$aksClusterName'].{rg:resourceGroup, id:id, loc:location, vnet:agentPoolProfiles[].vnetSubnetId, ver:kubernetesVersion, svpid: servicePrincipalProfile.clientId}" -o json)
@@ -187,6 +177,10 @@ echo $KUBE_VNET_NAME
 echo $KUBE_FW_SUBNET_NAME
 echo $AzFirewallSubnet
 az network vnet subnet create -g $resourceGroupName --vnet-name $KUBE_VNET_NAME -n $KUBE_FW_SUBNET_NAME --address-prefix $AzFirewallSubnet
+echo $resourceGroupName
+echo $KUBE_VNET_NAME
+echo $KUBE_FW_SUBNET_NAME
+echo $AzFirewallSubnet
 echo "done"
 az extension add --name azure-firewall
 
