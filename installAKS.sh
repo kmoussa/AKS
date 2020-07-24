@@ -69,7 +69,9 @@ echo "What is your firewall name?"
 read FW_NAME
 echo "what is your AZ Firewall Subnet prefix? i.e 10.0.4.0/24"
 read AzFirewallSubnet
- #Install Firewall
+
+
+#Install Firewall
 aksClusterName=$(jq -r ".aksClusterName.value" deployment-outputs.json)
 resourceGroupName=$(jq -r ".resourceGroupName.value" deployment-outputs.json)
 QUERYRESULT=$(az aks list --query "[?name=='$aksClusterName'].{rg:resourceGroup, id:id, loc:location, vnet:agentPoolProfiles[].vnetSubnetId, ver:kubernetesVersion, svpid: servicePrincipalProfile.clientId}" -o json)
@@ -122,7 +124,7 @@ az deployment group create \
         --template-file $templatepath \
         --parameters parameters.json
 
-
+az network vnet subnet create -g $resourceGroupName --vnet-name $KUBE_VNET_NAME --name AzureFirewallSubnet --address-prefix $AzFirewallSubnet
 
 az deployment group show -g $resourceGroupName -n $deploymentName --query "properties.outputs" -o json > deployment-outputs.json
 # use the deployment-outputs.json created after deployment to get the cluster name and resource group name
@@ -170,10 +172,6 @@ kubectl apply -f aspnetapp.yaml
 else
 kubectl apply -f aspnetappwin.yaml
 fi
-
-
-
-az network vnet subnet create -g $resourceGroupName --vnet-name $KUBE_VNET_NAME --name AzureFirewallSubnet --address-prefix $AzFirewallSubnet
 
 az extension add --name azure-firewall
 
