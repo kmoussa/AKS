@@ -119,20 +119,16 @@ az deployment group create \
         -n $deploymentName \
         --template-file $templatepath \
         --parameters parameters.json
-
+# use the deployment-outputs.json created after deployment to get the cluster name and resource group name
 az deployment group show -g $resourceGroupName -n $deploymentName --query "properties.outputs" -o json > deployment-outputs.json
 
 aksClusterName=$(jq -r ".aksClusterName.value" deployment-outputs.json)
 resourceGroupName=$(jq -r ".resourceGroupName.value" deployment-outputs.json)
 QUERYRESULT=$(az aks list --query "[?name=='$aksClusterName'].{rg:resourceGroup, id:id, loc:location, vnet:agentPoolProfiles[].vnetSubnetId, ver:kubernetesVersion, svpid: servicePrincipalProfile.clientId}" -o json)
 KUBE_VNET_NAME=$(echo $QUERYRESULT | jq '.[0] .vnet[0]' | grep -oP '(?<=/virtualNetworks/).*?(?=/)')
-#KUBE_FW_SUBNET_NAME='AzureFirewallSubnet' # this you cannot change
 KUBE_AGENT_SUBNET_NAME=$(echo $QUERYRESULT | jq '.[0] .vnet[0]' | grep -oP '(?<=/subnets/).*?(?=")')
 
 az network vnet subnet create -g $resourceGroupName --vnet-name $KUBE_VNET_NAME --name AzureFirewallSubnet --address-prefix $AzFirewallSubnet
-# use the deployment-outputs.json created after deployment to get the cluster name and resource group name
-#aksClusterName=$(jq -r ".aksClusterName.value" deployment-outputs.json)
-#resourceGroupName=$(jq -r ".resourceGroupName.value" deployment-outputs.json)
 
 az aks get-credentials --resource-group $resourceGroupName --name $aksClusterName
 
