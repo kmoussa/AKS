@@ -167,9 +167,9 @@ KUBE_AGENT_SUBNET_NAME=$(echo $QUERYRESULT | jq '.[0] .vnet[0]' | grep -oP '(?<=
 az network application-gateway frontend-ip create --gateway-name $applicationGatewayName --name InternalFrontendIp --private-ip-address $appgatewayprivIP --resource-group $resourceGroupName --subnet 'appgwsubnet' --vnet-name $KUBE_VNET_NAME
 
 if [[ $(echo $templatepath | grep -io win) == 'win' ]];then
-kubectl apply -f aspnetapp.yaml
-else
 kubectl apply -f aspnetappwin.yaml
+else
+kubectl apply -f aspnetapp.yaml
 fi
 if [[ $(echo $answer | grep -io y) == 'y' ]];then
 az extension add --name azure-firewall
