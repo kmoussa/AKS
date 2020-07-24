@@ -62,6 +62,18 @@ echo "What is the AKS service CIDR? i.e 10.0.3.0/24"
 read aksservicecidr
 echo "What is the AKS DNS IP? i.e 10.0.3.10"
 read aksdnsIP
+echo "Do you want to add Azure Firewall to the deployment? :(Y/N) "
+read answer
+if [[ $(echo $answer | grep -io y) == 'y' ]];then
+echo "What is your firewall name?"
+read FW_NAME
+echo "what is your AZ Firewall Subnet prefix? i.e 10.0.4.0/24"
+read AzFirewallSubnet
+elif [[ $(echo $answer | grep -io n) == 'n' ]];then
+echo "Proceeding withiout firewall..."
+else
+echo "you chose an invalid answer ... quiting the script."
+fi
 
 out=$(uname -a)
 if [[ $(echo $out | grep -io azure) == 'azure' ]];then
@@ -108,12 +120,19 @@ az deployment group create \
         --template-file $templatepath \
         --parameters parameters.json
 
-
-
 az deployment group show -g $resourceGroupName -n $deploymentName --query "properties.outputs" -o json > deployment-outputs.json
-# use the deployment-outputs.json created after deployment to get the cluster name and resource group name
+
 aksClusterName=$(jq -r ".aksClusterName.value" deployment-outputs.json)
 resourceGroupName=$(jq -r ".resourceGroupName.value" deployment-outputs.json)
+QUERYRESULT=$(az aks list --query "[?name=='$aksClusterName'].{rg:resourceGroup, id:id, loc:location, vnet:agentPoolProfiles[].vnetSubnetId, ver:kubernetesVersion, svpid: servicePrincipalProfile.clientId}" -o json)
+KUBE_VNET_NAME=$(echo $QUERYRESULT | jq '.[0] .vnet[0]' | grep -oP '(?<=/virtualNetworks/).*?(?=/)')
+#KUBE_FW_SUBNET_NAME='AzureFirewallSubnet' # this you cannot change
+KUBE_AGENT_SUBNET_NAME=$(echo $QUERYRESULT | jq '.[0] .vnet[0]' | grep -oP '(?<=/subnets/).*?(?=")')
+
+az network vnet subnet create -g $resourceGroupName --vnet-name $KUBE_VNET_NAME --name AzureFirewallSubnet --address-prefix $AzFirewallSubnet
+# use the deployment-outputs.json created after deployment to get the cluster name and resource group name
+#aksClusterName=$(jq -r ".aksClusterName.value" deployment-outputs.json)
+#resourceGroupName=$(jq -r ".resourceGroupName.value" deployment-outputs.json)
 
 az aks get-credentials --resource-group $resourceGroupName --name $aksClusterName
 
@@ -156,24 +175,7 @@ kubectl apply -f aspnetapp.yaml
 else
 kubectl apply -f aspnetappwin.yaml
 fi
-
-echo "Do you want to add Azure Firewall to the deployment? :(Y/N) "
-read answer
 if [[ $(echo $answer | grep -io y) == 'y' ]];then
-echo "What is your firewall name?"
-read FW_NAME
-echo "what is your AZ Firewall Subnet prefix? i.e 10.0.4.0/24"
-read AzFirewallSubnet
- #Install Firewall
-aksClusterName=$(jq -r ".aksClusterName.value" deployment-outputs.json)
-resourceGroupName=$(jq -r ".resourceGroupName.value" deployment-outputs.json)
-QUERYRESULT=$(az aks list --query "[?name=='$aksClusterName'].{rg:resourceGroup, id:id, loc:location, vnet:agentPoolProfiles[].vnetSubnetId, ver:kubernetesVersion, svpid: servicePrincipalProfile.clientId}" -o json)
-KUBE_VNET_NAME=$(echo $QUERYRESULT | jq '.[0] .vnet[0]' | grep -oP '(?<=/virtualNetworks/).*?(?=/)')
-#KUBE_FW_SUBNET_NAME='AzureFirewallSubnet' # this you cannot change
-KUBE_AGENT_SUBNET_NAME=$(echo $QUERYRESULT | jq '.[0] .vnet[0]' | grep -oP '(?<=/subnets/).*?(?=")')
-
-az network vnet subnet create -g $resourceGroupName --vnet-name $KUBE_VNET_NAME --name AzureFirewallSubnet --address-prefix $AzFirewallSubnet
-
 az extension add --name azure-firewall
 
 KUBE_AGENT_SUBNET_ID=$(echo $QUERYRESULT | jq '.[0] .vnet[0]')
