@@ -209,7 +209,7 @@ az network vnet subnet update --resource-group $resourceGroupName --route-table 
 az network route-table route create --resource-group $resourceGroupName --name $FW_ROUTE_NAME --route-table-name $FW_ROUTE_TABLE_NAME --address-prefix 0.0.0.0/0 --next-hop-type VirtualAppliance --next-hop-ip-address $FW_PRIVATE_IP --subscription $subscriptionId
 
 FW_PUBLIC_IP=$(az network public-ip show -g $resourceGroupName -n $FW_PIP --query ipAddress)
-
+cleanedIP=${FW_PUBLIC_IP:1:13}
 az network firewall network-rule create --firewall-name $FW_NAME --collection-name "aksnetwork" --destination-addresses "$HCP_IP"  --destination-ports 443 9000 --name "allow network" --protocols "TCP" --resource-group $resourceGroupName --source-addresses "*" --action "Allow" --description "aks network rule" --priority 100
 az network firewall application-rule create  --firewall-name $FW_NAME --collection-name "aksbasics" --name "allow network" --protocols http=80 https=443 --source-addresses "*" --resource-group $resourceGroupName --action "Allow" --target-fqdns "*.azmk8s.io" "aksrepos.azurecr.io" "*.blob.core.windows.net" "mcr.microsoft.com" "*.cdn.mscr.io" "management.azure.com" "login.microsoftonline.com" "api.snapcraft.io" "*auth.docker.io" "*cloudflare.docker.io" "*cloudflare.docker.com" "*registry-1.docker.io" --priority 100
 az network firewall application-rule create  --firewall-name $FW_NAME --collection-name "akstools" --name "allow network" --protocols http=80 https=443 --source-addresses "*" --resource-group $resourceGroupName --action "Allow" --target-fqdns "download.opensuse.org" "packages.microsoft.com" "dc.services.visualstudio.com" "*.opinsights.azure.com" "*.monitoring.azure.com" "gov-prod-policy-data.trafficmanager.net" "apt.dockerproject.org" "nvidia.github.io" --priority 101
@@ -217,8 +217,9 @@ az network firewall application-rule create  --firewall-name $FW_NAME --collecti
 
 #Getting the ingress public IP of the Ingress of the aspnetapp (will replace this later on with the Internal IP as you should expose the service throught the cluster Internal IP not a load Balancer)
 SERVICE_IP=$(kubectl get ingress aspnetapp --template="{{range .status.loadBalancer.ingress}}{{.ip}}{{end}}")
-az network firewall nat-rule create  --firewall-name $FW_NAME --collection-name "inboundlbrules" --name "allow inbound load balancers" --protocols "TCP" --source-addresses "*" --resource-group $resourceGroupName --action "Dnat" --source-addresses "*"  --destination-addresses ${FW_PUBLIC_IP:1:13} --destination-ports 80 --translated-address $SERVICE_IP --translated-port "80"  --priority 101
-    echo "Your deployment is finished successfully..."
+az network firewall nat-rule create  --firewall-name $FW_NAME --collection-name "inboundlbrules" --name "allow inbound load balancers" --protocols "TCP" --source-addresses "*" --resource-group $resourceGroupName --action "Dnat" --source-addresses "*"  --destination-addresses $cleanedIP --destination-ports 80 --translated-address $SERVICE_IP --translated-port "80"  --priority 101
+   
+   echo "Your deployment is finished successfully..."
 else
-    echo "Your deployment is finished successfully..."
+   echo "Your deployment is finished successfully..."
 fi
