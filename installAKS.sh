@@ -70,7 +70,7 @@ read FW_NAME
 echo "what is your AZ Firewall Subnet prefix? i.e 10.0.4.0/24"
 read AzFirewallSubnet
 elif [[ $(echo $answer | grep -io n) == 'n' ]];then
-echo "Proceeding withiout firewall..."
+echo "Proceeding without firewall..."
 else
 echo "you chose an invalid answer ... quiting the script."
 fi
