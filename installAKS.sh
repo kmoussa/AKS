@@ -166,12 +166,14 @@ KUBE_AGENT_SUBNET_NAME=$(echo $QUERYRESULT | jq '.[0] .vnet[0]' | grep -oP '(?<=
 #create app gateway Internal Frontend IP
 az network application-gateway frontend-ip create --gateway-name $applicationGatewayName --name InternalFrontendIp --private-ip-address $appgatewayprivIP --resource-group $resourceGroupName --subnet 'appgwsubnet' --vnet-name $KUBE_VNET_NAME
 
+if [[ $(echo $answer | grep -io y) == 'y' ]];then
 if [[ $(echo $templatepath | grep -io win) == 'win' ]];then
+
 kubectl apply -f aspnetappwin.yaml
 else
 kubectl apply -f aspnetapp.yaml
 fi
-if [[ $(echo $answer | grep -io y) == 'y' ]];then
+
 az extension add --name azure-firewall
 
 KUBE_AGENT_SUBNET_ID=$(echo $QUERYRESULT | jq '.[0] .vnet[0]')
@@ -221,5 +223,14 @@ az network firewall nat-rule create  --firewall-name $FW_NAME --collection-name 
    
    echo "Your deployment is finished successfully..."
 else
+if [[ $(echo $templatepath | grep -io win) == 'win' ]];then
+sed -i "s|use-private-ip: "true"|use-private-ip: "false"|g" aspnetappwin.yaml
+kubectl apply -f aspnetappwin.yaml
+else
+sed -i "s|use-private-ip: "true"|use-private-ip: "false"|g" aspnetapp.yaml
+kubectl apply -f aspnetapp.yaml
+fi
+
+
    echo "Your deployment is finished successfully..."
 fi
